@@ -14,48 +14,16 @@ python app.py
 
 Open `http://127.0.0.1:5000` and select **Set up admin** to create the first administrator. Setup is allowed only once, while no administrator account exists. Use a password with at least 12 characters. Alternatively, create the first administrator from the terminal with `python app.py create-admin`.
 
-## Deploy free to PythonAnywhere
+## Deploy to Render
 
-PythonAnywhere's Beginner plan includes one web app, a `your-username.pythonanywhere.com` address, and 512 MB of storage. AquaSupply can keep its existing SQLite database in your account's home directory, so no database migration is needed. The free plan is limited to 100 CPU-seconds per day and restricted outbound internet; use it for a demo or small pilot, not a critical production service. See [PythonAnywhere pricing](https://www.pythonanywhere.com/pricing/), its [Flask deployment guide](https://help.pythonanywhere.com/pages/Flask/), and [free-account network limits](https://help.pythonanywhere.com/pages/ExternalVCS/).
+The Render Blueprint in `render.yaml` configures one Waitress web service in Singapore, an HTTPS-only session cookie, generated app and first-admin setup secrets, and a 1 GB persistent disk for the SQLite database. This avoids losing user accounts and farm data on redeploy. The disk requires a paid web service. At current listed rates, the smallest service plus this disk is approximately **US$7.25/month** (US$7 compute + US$0.25 disk), before taxes or additional usage. Review the live [Render web-service pricing](https://render.com/pricing#compute) and [persistent disk pricing](https://render.com/docs/disks), and approve the exact charges in Render before creating resources. Render also requires payment information on file.
 
-1. Create a free Beginner account and open a Bash console. Clone this public repository and install its requirements in a Python 3.13 virtual environment:
+1. Push `main` to GitHub, sign in to [Render](https://dashboard.render.com), choose **New → Blueprint**, connect `thejendramallu1/Aquaculture`, and select `main`.
+2. Review the selected plan, disk, region, and monthly charge; deploy only if you accept the current cost.
+3. After the health check passes, open the generated `onrender.com` address. Select **Set up admin**, copy `AQUASUPPLY_SETUP_TOKEN` from the service's **Environment** settings, and enter it along with your administrator details. Render generates both secrets; keep them private.
+4. Once an administrator is created, first-time setup is permanently disabled. Create management and analysis accounts from **Team accounts**.
 
-   ```bash
-   git clone https://github.com/thejendramallu1/Aquaculture.git
-   cd Aquaculture
-   mkvirtualenv --python=/usr/bin/python3.13 aquasupply
-   pip install -r requirements.txt
-   ```
-
-2. Generate two different secrets in the console by running `python -c "import secrets; print(secrets.token_urlsafe(48))"` twice. Keep both values private.
-3. In the **Web** tab, add a **Manual configuration** web app using Python 3.13. Set its virtualenv to `aquasupply` and edit the WSGI configuration file. Set the following values **before** importing the app, replacing each placeholder with your own value and username:
-
-   ```python
-   import os
-   import sys
-
-   project_dir = "/home/your-username/Aquaculture"
-   os.environ["AQUASUPPLY_SECRET_KEY"] = "paste-your-first-generated-secret"
-   os.environ["AQUASUPPLY_SETUP_TOKEN"] = "paste-your-second-generated-secret"
-   os.environ["AQUASUPPLY_COOKIE_SECURE"] = "true"
-   os.environ["AQUASUPPLY_DB"] = "/home/your-username/aquasupply-data/aquasupply.sqlite3"
-   sys.path.insert(0, project_dir)
-
-   from app import app as application
-   ```
-
-   Keep this WSGI file private; do not commit your secrets to GitHub. The app creates the database directory on startup.
-4. Save the WSGI file and click **Reload** in the Web tab. Visit `https://your-username.pythonanywhere.com`, choose **Set up admin**, and enter your second generated secret as the one-time setup token.
-
-The database path above is outside the Git checkout, so code updates won't replace it. Back it up periodically. To update the app later, pull changes in the Bash console and reload the web app.
-
-## Deploy to Render (paid option)
-
-The included `render.yaml` configures a single-instance Python web service in Singapore, a 1 GB persistent disk for the SQLite database, HTTPS-only session cookies, generated secret keys, and a database health check. Render's smallest paid web service and persistent disk are paid resources; the estimated base price is approximately US$7.25/month, before taxes or additional usage. Check the [current compute pricing](https://render.com/pricing#compute) and [disk pricing](https://render.com/docs/disks).
-
-To deploy, push the project to GitHub, sign in to [Render](https://dashboard.render.com), choose **New → Blueprint**, connect `thejendramallu1/Aquaculture`, select the `main` branch, review the service and disk costs, and confirm deployment. Render generates `AQUASUPPLY_SECRET_KEY` and `AQUASUPPLY_SETUP_TOKEN` during Blueprint setup. Keep both values private. Copy the generated setup token from the service's **Environment** settings, open the deployed `onrender.com` address, select **Set up admin**, and enter that token to claim the first administrator account. Once an administrator is created, first-time setup is permanently disabled.
-
-The persistent disk keeps the SQLite database across deploys. This single-instance SQLite setup is intended for a small deployment and cannot be horizontally scaled. For multi-instance or higher-availability deployments, migrate the application database to a managed PostgreSQL service before scaling.
+The persistent SQLite disk requires a single service instance, so this setup is intended for a small deployment and cannot be horizontally scaled. Back up the disk regularly. For multiple instances or higher availability, migrate to a managed PostgreSQL database before scaling.
 
 ## Account setup and workflow
 
@@ -72,6 +40,6 @@ Passwords are hashed on the server. Sessions use HTTP-only, same-site cookies; s
 python -m unittest discover -s tests
 ```
 
-The local Flask server is for development. Render uses Waitress, HTTPS, a persistent secret key, and `AQUASUPPLY_COOKIE_SECURE=true`. Do not expose the development server directly to the internet.
+The local Flask server is for development. For deployment, use a production WSGI server, HTTPS, a persistent secret key, and set `AQUASUPPLY_COOKIE_SECURE=true`. Do not expose the development server directly to the internet.
 
 The recommendation score is a transparent hand-weighted baseline, not a trained or validated Linear Discriminant Analysis model or nutritional advice. Validate feed suitability and local requirements with a qualified aquaculture professional.

@@ -198,7 +198,7 @@ class AuthWorkflowTests(unittest.TestCase):
         )
         self.assertEqual(second_response.status_code, 409)
 
-    def test_browser_setup_requires_render_setup_token_when_configured(self):
+    def test_browser_setup_requires_configured_render_setup_token(self):
         setup_database = Path(self.temp_dir.name) / "token-setup.sqlite3"
         setup_app = create_app(database_path=setup_database, secret_key="setup-token-test-key")
         setup_app.config.update(TESTING=True, SETUP_TOKEN="one-time-setup-token")
