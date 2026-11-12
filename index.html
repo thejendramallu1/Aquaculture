@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f8f6">
+  <title>AquaSupply — Aquaculture feed matching</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main id="auth-screen" class="auth-screen"></main>
+  <div class="app-shell hidden" id="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#" aria-label="AquaSupply home">
+        <span class="brand-mark" aria-hidden="true">A</span>
+        <span><strong>AquaSupply</strong><small>FARMING, CONNECTED</small></span>
+      </a>
+
+      <div class="workspace-label">WORKSPACE</div>
+      <nav class="main-nav" aria-label="Main navigation">
+        <button class="nav-link active" type="button" data-page="dashboard"><span class="nav-icon">⌂</span>Overview</button>
+        <button class="nav-link" type="button" data-page="requests"><span class="nav-icon">▤</span>Farm requests</button>
+        <button class="nav-link" type="button" data-page="inventory"><span class="nav-icon">◈</span>Feed inventory</button>
+        <button class="nav-link" type="button" data-page="review"><span class="nav-icon">✓</span>Review queue<span class="nav-count" id="review-count">0</span></button>
+        <button class="nav-link" type="button" data-page="recommendations"><span class="nav-icon">✳</span>Recommendations</button>
+        <button class="nav-link" type="button" data-page="team"><span class="nav-icon">♙</span>Team accounts</button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="session-card">
+          <span class="demo-dot"></span>
+          <div><strong id="sidebar-user-name">Signed in</strong><small id="sidebar-user-role"></small></div>
+        </div>
+        <div class="sidebar-foot">AQUASUPPLY <span>·</span> OPERATIONS</div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div class="mobile-brand"><span class="brand-mark" aria-hidden="true">A</span><strong>AquaSupply</strong></div>
+        <div class="topbar-context"><span class="status-pulse"></span> Aquaculture operations <span class="crumb-divider">/</span> <span id="topbar-page">Overview</span></div>
+        <div class="user-identity"><span id="role-label"></span><strong id="topbar-user-name"></strong></div>
+        <button class="button secondary small logout-button" type="button" data-action="logout">Sign out</button>
+      </header>
+
+      <section id="app-content" class="page-content" aria-live="polite"></section>
+    </main>
+  </div>
+
+  <dialog id="app-dialog" class="app-dialog">
+    <div id="dialog-content"></div>
+  </dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
