@@ -198,6 +198,40 @@ class AuthWorkflowTests(unittest.TestCase):
         )
         self.assertEqual(second_response.status_code, 409)
 
+    def test_browser_setup_requires_render_setup_token_when_configured(self):
+        setup_database = Path(self.temp_dir.name) / "token-setup.sqlite3"
+        setup_app = create_app(database_path=setup_database, secret_key="setup-token-test-key")
+        setup_app.config.update(TESTING=True, SETUP_TOKEN="one-time-setup-token")
+        client = setup_app.test_client()
+        session_response = client.get("/api/session")
+        self.assertTrue(session_response.get_json()["setupTokenRequired"])
+        payload = {
+            "name": "First Admin",
+            "email": "token-admin@example.test",
+            "password": PASSWORD,
+        }
+        csrf = {"X-CSRF-Token": session_response.get_json()["csrfToken"]}
+
+        missing_token = client.post("/api/setup/administrator", json=payload, headers=csrf)
+        self.assertEqual(missing_token.status_code, 403)
+        invalid_token = client.post(
+            "/api/setup/administrator",
+            json={**payload, "setupToken": "wrong-token"},
+            headers=csrf,
+        )
+        self.assertEqual(invalid_token.status_code, 403)
+        valid_token = client.post(
+            "/api/setup/administrator",
+            json={**payload, "setupToken": "one-time-setup-token"},
+            headers=csrf,
+        )
+        self.assertEqual(valid_token.status_code, 201, valid_token.get_json())
+
+    def test_health_check_reports_database_availability(self):
+        response = self.admin.get("/healthz")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"status": "ok"})
+
 
 if __name__ == "__main__":
     unittest.main()

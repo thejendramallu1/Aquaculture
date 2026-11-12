@@ -103,6 +103,7 @@ def create_app(database_path=None, secret_key=None):
     app = Flask(__name__)
     app.config.update(
         SECRET_KEY=secret_key or os.environ.get("AQUASUPPLY_SECRET_KEY") or secrets.token_hex(32),
+        SETUP_TOKEN=os.environ.get("AQUASUPPLY_SETUP_TOKEN", ""),
         DATABASE=str(database_path or os.environ.get("AQUASUPPLY_DB") or BASE_DIR / "instance" / "aquasupply.sqlite3"),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
@@ -164,6 +165,20 @@ def create_app(database_path=None, secret_key=None):
     def index():
         return send_from_directory(BASE_DIR, "index.html")
 
+    @app.get("/healthz")
+    def health_check():
+        connection = None
+        try:
+            connection = database_connection(app.config["DATABASE"])
+            connection.execute("SELECT 1").fetchone()
+            return jsonify(status="ok")
+        except sqlite3.Error:
+            app.logger.exception("Database health check failed")
+            return jsonify(error="Service unavailable."), 503
+        finally:
+            if connection is not None:
+                connection.close()
+
     @app.get("/styles.css")
     def stylesheet():
         return send_from_directory(BASE_DIR, "styles.css")
@@ -181,6 +196,7 @@ def create_app(database_path=None, secret_key=None):
             user=public_user(g.user),
             csrfToken=session["csrf_token"],
             setupRequired=not administrator_exists,
+            setupTokenRequired=bool(app.config["SETUP_TOKEN"]),
         )
 
     @app.post("/api/setup/administrator")
@@ -196,6 +212,13 @@ def create_app(database_path=None, secret_key=None):
             return jsonify(error="Enter a valid name and email address."), 400
         if not valid_password(password):
             return jsonify(error="Use a password between 12 and 128 characters."), 400
+        expected_setup_token = app.config["SETUP_TOKEN"]
+        supplied_setup_token = data.get("setupToken")
+        if expected_setup_token and (
+            not isinstance(supplied_setup_token, str)
+            or not hmac.compare_digest(expected_setup_token, supplied_setup_token)
+        ):
+            return jsonify(error="The first-administrator setup token is not valid."), 403
 
         try:
             g.db.execute("BEGIN IMMEDIATE")

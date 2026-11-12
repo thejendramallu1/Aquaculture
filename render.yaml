@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: aquasupply-thejendramallu1
+    runtime: python
+    plan: 0.5c-512mb
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    startCommand: waitress-serve --listen=0.0.0.0:$PORT app:app
+    healthCheckPath: /healthz
+    envVars:
+      - key: AQUASUPPLY_SECRET_KEY
+        generateValue: true
+      - key: AQUASUPPLY_SETUP_TOKEN
+        generateValue: true
+      - key: AQUASUPPLY_DB
+        value: /var/data/aquasupply.sqlite3
+      - key: AQUASUPPLY_COOKIE_SECURE
+        value: "true"
+    disk:
+      name: aquasupply-data
+      mountPath: /var/data
+      sizeGB: 1

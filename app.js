@@ -30,7 +30,7 @@ const allowedPages = {
   admin: ["dashboard", "inventory", "recommendations", "team"]
 };
 
-const auth = { user: null, csrfToken: "", setupRequired: false, mode: "choose", selectedRole: null, notice: "" };
+const auth = { user: null, csrfToken: "", setupRequired: false, setupTokenRequired: false, mode: "choose", selectedRole: null, notice: "" };
 let state = { requests: [], inventory: [], recommendations: [], pendingAccounts: [], accounts: [] };
 let activePage = "dashboard";
 let toastTimer;
@@ -141,7 +141,8 @@ function renderAuth() {
     ? `<div class="form-field"><label for="auth-name">Full name</label><input class="form-control" id="auth-name" name="name" autocomplete="name" required maxlength="80"></div>
        <div class="form-field"><label for="auth-email">Email address</label><input class="form-control" id="auth-email" name="email" type="email" autocomplete="email" required maxlength="254"></div>
        <div class="form-field"><label for="auth-password">Password</label><input class="form-control" id="auth-password" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><span class="form-hint">Use at least 12 characters.</span></div>
-       ${settingUp ? `<div class="form-field"><label for="auth-password-confirm">Confirm password</label><input class="form-control" id="auth-password-confirm" name="passwordConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></div>` : ""}`
+       ${settingUp ? `<div class="form-field"><label for="auth-password-confirm">Confirm password</label><input class="form-control" id="auth-password-confirm" name="passwordConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></div>
+         ${auth.setupTokenRequired ? `<div class="form-field"><label for="auth-setup-token">One-time setup token</label><input class="form-control" id="auth-setup-token" name="setupToken" type="password" autocomplete="off" required><span class="form-hint">Find this generated token in your Render service’s Environment settings.</span></div>` : ""}` : ""}`
     : `<div class="form-field"><label for="auth-email">Email address</label><input class="form-control" id="auth-email" name="email" type="email" autocomplete="username" required maxlength="254"></div>
        <div class="form-field"><label for="auth-password">Password</label><input class="form-control" id="auth-password" name="password" type="password" autocomplete="current-password" required maxlength="128"></div>`;
   authScreen.innerHTML = `<section class="auth-layout auth-single">
@@ -582,7 +583,7 @@ async function handleAuthSubmit(event) {
       }
       const result = await api("/api/setup/administrator", {
         method: "POST",
-        body: { name: values.name, email: values.email, password: values.password }
+        body: { name: values.name, email: values.email, password: values.password, setupToken: values.setupToken }
       });
       auth.user = result.user;
       auth.setupRequired = false;
@@ -698,6 +699,7 @@ async function initialize() {
     const sessionData = await api("/api/session");
     auth.user = sessionData.user;
     auth.setupRequired = sessionData.setupRequired;
+    auth.setupTokenRequired = sessionData.setupTokenRequired;
     if (auth.user) await loadData();
     else renderAuth();
   } catch (error) {
